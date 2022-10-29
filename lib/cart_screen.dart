@@ -1,10 +1,9 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_cart/cart_model.dart';
 import 'package:shopping_cart/cart_provider.dart';
+import 'package:shopping_cart/db_helper.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -14,6 +13,7 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  DBHelper? dbHelper = DBHelper();
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
@@ -76,12 +76,31 @@ class _CartScreenState extends State<CartScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        snapshot.data![index].productName
-                                            .toString(),
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            snapshot.data![index].productName
+                                                .toString(),
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                          InkWell(
+                                              onTap: () {
+                                                dbHelper!.delete(
+                                                    snapshot.data![index].id!);
+                                                cart.removeCounter();
+                                                cart.removeTotalPrice(
+                                                    double.parse(
+                                                  snapshot
+                                                      .data![index].productPrice
+                                                      .toString(),
+                                                ));
+                                              },
+                                              child: Icon(Icons.delete))
+                                        ],
                                       ),
                                       SizedBox(
                                         height: 5,
@@ -134,7 +153,48 @@ class _CartScreenState extends State<CartScreen> {
               } else
                 return Text('data');
             },
+          ),
+          Consumer<CartProvider>(
+            builder: (context, value, child) {
+              return Visibility(
+                visible: value.getTotalPrice().toStringAsFixed(2) == "0.00"
+                    ? false
+                    : true,
+                child: Column(
+                  children: [
+                    ReusableWidget(
+                        title: 'Sub Total',
+                        value: r'$' + value.getTotalPrice().toStringAsFixed(2))
+                  ],
+                ),
+              );
+            },
           )
+        ],
+      ),
+    );
+  }
+}
+
+class ReusableWidget extends StatelessWidget {
+  final String title, value;
+  const ReusableWidget({super.key, required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.subtitle2,
+          ),
+          Text(
+            value.toString(),
+            style: Theme.of(context).textTheme.subtitle2,
+          ),
         ],
       ),
     );
